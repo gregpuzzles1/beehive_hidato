@@ -4,7 +4,6 @@ import { TopNav } from '../components/navigation/TopNav'
 import { BeehiveGrid } from '../components/grid/BeehiveGrid'
 import { NumberSelector } from '../features/puzzle/controls/NumberSelector'
 import { PuzzleControlBar } from '../features/puzzle/controls/PuzzleControlBar'
-import { CheckResultModal } from '../components/modal/CheckResultModal'
 import { CompletionModal } from '../components/modal/CompletionModal'
 import { useGameSession } from '../features/puzzle/state/useGameSession'
 import { useCellInput } from '../features/puzzle/controls/useCellInput'
@@ -32,7 +31,7 @@ export function DifficultyPage({ slug }: DifficultyPageProps) {
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null)
   const [puzzleError, setPuzzleError] = useState<string | null>(null)
   const [duplicateFlash, setDuplicateFlash] = useState<number | null>(null)
-  const [showCheckModal, setShowCheckModal] = useState(false)
+  const [showCheckTooltip, setShowCheckTooltip] = useState(false)
   const [showCompletionModal, setShowCompletionModal] = useState(false)
 
   // Generate initial puzzle - deferred so "Generating..." renders first
@@ -69,8 +68,7 @@ export function DifficultyPage({ slug }: DifficultyPageProps) {
   const gameState = useGameSession(puzzle)
   const { flashingCells, checkAdjacency, clearFlashing } =
     useAdjacencyFeedback(gameState?.cells ?? [])
-  const { incorrectCells, checkResult, performCheck, clearCheck } =
-    useCheckPuzzle()
+  const { incorrectCells, performCheck, clearCheck } = useCheckPuzzle()
 
   const isActive = gameState?.session.status === 'active'
   const isPaused = gameState?.session.status === 'paused'
@@ -117,6 +115,7 @@ export function DifficultyPage({ slug }: DifficultyPageProps) {
   const handleCellClick = useCallback(
     (cellId: string) => {
       if (!gameState || isPaused) return
+      setShowCheckTooltip(false)
       clearCheck()
       clearFlashing()
       baseCellClick(cellId)
@@ -131,7 +130,14 @@ export function DifficultyPage({ slug }: DifficultyPageProps) {
         }, 50)
       }
     },
-    [gameState, isPaused, baseCellClick, clearCheck, clearFlashing, checkAdjacency]
+    [
+      gameState,
+      isPaused,
+      baseCellClick,
+      clearCheck,
+      clearFlashing,
+      checkAdjacency,
+    ]
   )
 
   // Check action
@@ -139,10 +145,13 @@ export function DifficultyPage({ slug }: DifficultyPageProps) {
     if (!gameState) return
     const allPlayable = gameState.cells.filter((c) => c.state !== 'blocked')
     const allFilled = allPlayable.every((c) => c.currentValue !== null)
+    const hasAnyEntries = allPlayable.some((c) => c.currentValue !== null)
     const result = performCheck(gameState.actions.checkPlacements, allFilled)
 
-    if (result.length === 0 && allFilled) {
-      setShowCheckModal(true)
+    if (result.length === 0 && hasAnyEntries) {
+      setShowCheckTooltip(true)
+    } else {
+      setShowCheckTooltip(false)
     }
   }, [gameState, performCheck])
 
@@ -164,6 +173,7 @@ export function DifficultyPage({ slug }: DifficultyPageProps) {
   // Reset
   const handleReset = useCallback(() => {
     if (!gameState) return
+    setShowCheckTooltip(false)
     gameState.actions.resetPuzzle()
     clearCheck()
     clearFlashing()
@@ -172,6 +182,7 @@ export function DifficultyPage({ slug }: DifficultyPageProps) {
   // Solution
   const handleSolution = useCallback(() => {
     if (!gameState) return
+    setShowCheckTooltip(false)
     gameState.actions.revealSolution()
     clearCheck()
     clearFlashing()
@@ -190,7 +201,7 @@ export function DifficultyPage({ slug }: DifficultyPageProps) {
     clearCheck()
     clearFlashing()
     setShowCompletionModal(false)
-    setShowCheckModal(false)
+    setShowCheckTooltip(false)
   }, [slug, clearCheck, clearFlashing])
 
   // Pause
@@ -283,14 +294,34 @@ export function DifficultyPage({ slug }: DifficultyPageProps) {
         ) : null}
 
         <div className="difficulty-page__grid-area">
-          <BeehiveGrid
-            cells={gameState.cells}
-            hexSize={hexSize}
-            highlightedCells={highlightedCells}
-            flashingCells={flashingCells}
-            isPaused={isPaused || false}
-            onCellClick={handleCellClick}
-          />
+          {showCheckTooltip && (
+            <div
+              className="difficulty-page__check-tooltip"
+              role="status"
+              aria-live="polite"
+            >
+              <span>All numbers have been entered correctly.</span>
+              <button
+                type="button"
+                className="difficulty-page__check-tooltip-close"
+                aria-label="Close success message"
+                onClick={() => setShowCheckTooltip(false)}
+              >
+                x
+              </button>
+            </div>
+          )}
+
+          <div className="difficulty-page__grid-scroll">
+            <BeehiveGrid
+              cells={gameState.cells}
+              hexSize={hexSize}
+              highlightedCells={highlightedCells}
+              flashingCells={flashingCells}
+              isPaused={isPaused || false}
+              onCellClick={handleCellClick}
+            />
+          </div>
         </div>
 
         {!isPaused && (
@@ -324,11 +355,6 @@ export function DifficultyPage({ slug }: DifficultyPageProps) {
           isCompleted={gameState.session.status === 'completed'}
         />
       </div>
-
-      <CheckResultModal
-        isOpen={showCheckModal && checkResult === 'success'}
-        onClose={() => setShowCheckModal(false)}
-      />
 
       <CompletionModal
         isOpen={showCompletionModal}
