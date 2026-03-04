@@ -23,7 +23,7 @@
   --cell-playable-bg: #ffffff;
   --cell-empty-bg: #f8f8f8;
   --cell-empty-border: #cccccc;
-  --cell-blocked-bg: #e0e0e0;
+  --cell-blocked-bg: #36454f;
 }
 
 /* Dark Theme */
@@ -51,7 +51,7 @@
   --cell-playable-text: #e8e8f0;
   --cell-empty-bg: #22223a;
   --cell-empty-border: #3a3a52;
-  --cell-blocked-bg: #333350;
+  --cell-blocked-bg: #2f3b44;
   --cell-anchor-bg: #d4a937;
   --cell-anchor-text: #1a1a1a;
   --cell-start-end-bg: #5ec8d0;

@@ -15,11 +15,41 @@
   margin-bottom: var(--spacing-xs);
 }
 
+.difficulty-page__header-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
 .difficulty-page__timer {
   font-size: var(--font-size-lg);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--text-secondary);
+}
+
+.difficulty-page__header-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.difficulty-page__header-btn:hover:not(:disabled) {
+  background-color: var(--bg-tertiary);
+}
+
+.difficulty-page__header-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .difficulty-page__content {
@@ -92,5 +122,13 @@
 
   .difficulty-page__header h1 {
     font-size: var(--font-size-lg);
+  }
+
+  .difficulty-page__header-controls {
+    gap: var(--spacing-xs);
+  }
+
+  .difficulty-page__header-btn {
+    font-size: 0.75rem;
   }
 }

@@ -8,7 +8,7 @@ import type {
   CellStyleRole,
 } from '../../../types/puzzle'
 import { DIFFICULTY_PROFILES } from './difficultyProfiles'
-import { hexKey, getNeighbors } from './hexGeometry'
+import { generatePerfectHexGrid, hexKey, getNeighbors } from './hexGeometry'
 import { generatePerfectVariant } from './variants/perfect'
 import { generateBlockedVariant } from './variants/blocked'
 import { generateDamagedVariant } from './variants/damaged'
@@ -174,6 +174,12 @@ function generateGridShape(
   variant: HiveVariant,
   sideLength: number
 ): { playableCoords: HexCoord[]; blockedCoords: HexCoord[] } {
+  const deriveBlockedCoords = (playable: HexCoord[]): HexCoord[] => {
+    const all = generatePerfectHexGrid(sideLength)
+    const playableKeys = new Set(playable.map(hexKey))
+    return all.filter((coord) => !playableKeys.has(hexKey(coord)))
+  }
+
   switch (variant) {
     case 'perfect':
       return {
@@ -185,19 +191,28 @@ function generateGridShape(
       return { playableCoords: result.playable, blockedCoords: result.blocked }
     }
     case 'damaged':
-      return {
-        playableCoords: generateDamagedVariant(sideLength),
-        blockedCoords: [],
+      {
+        const playableCoords = generateDamagedVariant(sideLength)
+        return {
+          playableCoords,
+          blockedCoords: deriveBlockedCoords(playableCoords),
+        }
       }
     case 'ring':
-      return {
-        playableCoords: generateRingVariant(sideLength),
-        blockedCoords: [],
+      {
+        const playableCoords = generateRingVariant(sideLength)
+        return {
+          playableCoords,
+          blockedCoords: deriveBlockedCoords(playableCoords),
+        }
       }
     case 'spiral':
-      return {
-        playableCoords: generateSpiralVariant(sideLength),
-        blockedCoords: [],
+      {
+        const playableCoords = generateSpiralVariant(sideLength)
+        return {
+          playableCoords,
+          blockedCoords: deriveBlockedCoords(playableCoords),
+        }
       }
   }
 }

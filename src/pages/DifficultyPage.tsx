@@ -250,11 +250,28 @@ export function DifficultyPage({ slug }: DifficultyPageProps) {
       <TopNav context="gameplay" currentDifficulty={slug} />
       <header className="difficulty-page__header">
         <h1>{DIFFICULTY_LABELS[slug]}</h1>
-        {timerState && gameState.session.timerVisible && (
-          <div className="difficulty-page__timer" aria-live="polite">
-            {formatTime(timerState.elapsedMs)}
-          </div>
-        )}
+        <div className="difficulty-page__header-controls">
+          {timerState && gameState.session.timerVisible && (
+            <div className="difficulty-page__timer" aria-live="polite">
+              {formatTime(timerState.elapsedMs)}
+            </div>
+          )}
+          <button
+            className="difficulty-page__header-btn"
+            onClick={handleTogglePause}
+            disabled={gameState.session.status === 'completed'}
+            aria-label={isPaused ? 'Resume game' : 'Pause game'}
+          >
+            {isPaused ? '▶ Resume' : '⏸ Pause'}
+          </button>
+          <button
+            className="difficulty-page__header-btn"
+            onClick={handleToggleTimer}
+            aria-label={gameState.session.timerVisible ? 'Hide timer' : 'Show timer'}
+          >
+            {gameState.session.timerVisible ? '⏱ Timer Off' : '⏱ Timer On'}
+          </button>
+        </div>
       </header>
 
       <div className="difficulty-page__content">
@@ -303,10 +320,7 @@ export function DifficultyPage({ slug }: DifficultyPageProps) {
           onReset={handleReset}
           onSolution={handleSolution}
           onNextPuzzle={handleNextPuzzle}
-          onTogglePause={handleTogglePause}
-          onToggleTimer={handleToggleTimer}
           isPaused={isPaused || false}
-          timerVisible={gameState.session.timerVisible}
           isCompleted={gameState.session.status === 'completed'}
         />
       </div>
