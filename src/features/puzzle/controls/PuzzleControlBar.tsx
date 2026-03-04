@@ -6,10 +6,7 @@ interface PuzzleControlBarProps {
   onReset: () => void
   onSolution: () => void
   onNextPuzzle: () => void
-  onTogglePause: () => void
-  onToggleTimer: () => void
   isPaused: boolean
-  timerVisible: boolean
   isCompleted: boolean
 }
 
@@ -18,10 +15,7 @@ export function PuzzleControlBar({
   onReset,
   onSolution,
   onNextPuzzle,
-  onTogglePause,
-  onToggleTimer,
   isPaused,
-  timerVisible,
   isCompleted,
 }: PuzzleControlBarProps) {
   return (
@@ -65,21 +59,6 @@ export function PuzzleControlBar({
       </div>
 
       <div className="puzzle-control-bar__group">
-        <button
-          className="puzzle-control-bar__btn puzzle-control-bar__btn--small"
-          onClick={onTogglePause}
-          disabled={isCompleted}
-          aria-label={isPaused ? 'Resume game' : 'Pause game'}
-        >
-          {isPaused ? '▶ Resume' : '⏸ Pause'}
-        </button>
-        <button
-          className="puzzle-control-bar__btn puzzle-control-bar__btn--small"
-          onClick={onToggleTimer}
-          aria-label={timerVisible ? 'Hide timer' : 'Show timer'}
-        >
-          {timerVisible ? '⏱ Timer Off' : '⏱ Timer On'}
-        </button>
         <Link
           to="/"
           className="puzzle-control-bar__btn puzzle-control-bar__btn--link"
