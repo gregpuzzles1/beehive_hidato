@@ -62,12 +62,12 @@ description: "Task list template for feature implementation"
 
 Examples of foundational tasks (adjust based on your project):
 
-- [ ] T004 Setup database schema and migrations framework
-- [ ] T005 [P] Implement authentication/authorization framework
-- [ ] T006 [P] Setup API routing and middleware structure
-- [ ] T007 Create base models/entities that all stories depend on
-- [ ] T008 Configure error handling and logging infrastructure
-- [ ] T009 Setup environment configuration management
+- [ ] T004 Configure React + TypeScript project baseline and shared app structure
+- [ ] T005 [P] Setup GitHub Actions CI checks for pull requests to `main`
+- [ ] T006 [P] Setup GitHub Actions deployment workflow from `main` to GitHub Pages
+- [ ] T007 Define responsive layout tokens/breakpoints for mobile/tablet/desktop
+- [ ] T008 Define accessibility baseline checks (keyboard flow, semantics, labels)
+- [ ] T009 Setup environment/config for static build output only (no backend runtime)
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -154,7 +154,8 @@ Examples of foundational tasks (adjust based on your project):
 - [ ] TXXX Code cleanup and refactoring
 - [ ] TXXX Performance optimization across all stories
 - [ ] TXXX [P] Additional unit tests (if requested) in tests/unit/
-- [ ] TXXX Security hardening
+- [ ] TXXX Accessibility pass for changed UI flows
+- [ ] TXXX Responsive verification on mobile and desktop breakpoints
 - [ ] TXXX Run quickstart.md validation
 
 ---

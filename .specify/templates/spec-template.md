@@ -90,6 +90,16 @@
 - **FR-004**: System MUST [data requirement, e.g., "persist user preferences"]
 - **FR-005**: System MUST [behavior, e.g., "log all security events"]
 
+### Constitution Alignment *(mandatory)*
+
+- **CA-001**: Feature MUST run as static client-side web functionality (no backend runtime
+  or database dependency).
+- **CA-002**: Feature MUST be implementable in React + TypeScript.
+- **CA-003**: Feature MUST define responsive behavior for mobile, tablet, and desktop.
+- **CA-004**: Feature MUST include accessibility expectations for keyboard and semantic UI.
+- **CA-005**: Feature release path MUST remain GitHub Actions deployment from `main` to
+  GitHub Pages only.
+
 *Example of marking unclear requirements:*
 
 - **FR-006**: System MUST authenticate users via [NEEDS CLARIFICATION: auth method not specified - email/password, SSO, OAuth?]

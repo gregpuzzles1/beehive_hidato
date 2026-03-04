@@ -31,7 +31,16 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+- Static-only architecture: Confirms no backend runtime, SSR dependency, or database
+  requirement is introduced.
+- Stack baseline: Confirms implementation uses React + TypeScript (or documents explicit,
+  approved exception).
+- Accessibility/responsiveness: Defines how mobile/tablet/desktop behavior and WCAG 2.1
+  AA-aligned checks are validated.
+- Deployment path: Confirms production deploy is GitHub Pages via GitHub Actions from
+  `main` only.
+- Quality gates: Confirms CI checks and feature-level verification tasks are included for
+  changed behavior.
 
 ## Project Structure
 

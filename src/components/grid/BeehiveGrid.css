@@ -1,0 +1,24 @@
+.beehive-grid {
+  width: 100%;
+  max-width: 600px;
+  aspect-ratio: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.beehive-grid__svg {
+  width: 100%;
+  height: auto;
+  max-height: 60vh;
+}
+
+@media (max-width: 767px) {
+  .beehive-grid {
+    max-width: 100%;
+  }
+
+  .beehive-grid__svg {
+    max-height: 50vh;
+  }
+}

@@ -1,0 +1,124 @@
+/* Shared modal base – also defined in CheckResultModal.css;
+   CSS cascade handles duplicates safely. */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: var(--modal-backdrop);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: var(--spacing-md);
+}
+
+.modal-content {
+  background-color: var(--modal-bg);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+  box-shadow: var(--shadow-lg);
+  max-width: 440px;
+  width: 100%;
+  text-align: center;
+}
+
+.completion-modal {
+  position: relative;
+  overflow: hidden;
+}
+
+.completion-modal__title {
+  font-size: var(--font-size-xl);
+  margin-bottom: var(--spacing-lg);
+}
+
+.completion-modal__metrics {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-xl);
+  margin-bottom: var(--spacing-lg);
+}
+
+.completion-modal__metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.completion-modal__metric-value {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.completion-modal__metric-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+.completion-modal__actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  justify-content: center;
+}
+
+.completion-modal__btn {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.completion-modal__btn:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.completion-modal__btn--primary {
+  background-color: var(--button-bg);
+  color: var(--button-text);
+  border-color: var(--button-bg);
+}
+
+.completion-modal__btn--primary:hover {
+  background-color: var(--button-hover);
+  border-color: var(--button-hover);
+}
+
+/* Confetti */
+.confetti-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.confetti-particle {
+  position: absolute;
+  top: -10px;
+  border-radius: 2px;
+  animation: confetti-fall linear forwards;
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(400px) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 767px) {
+  .completion-modal__metrics {
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+
+  .completion-modal__actions {
+    flex-direction: column;
+  }
+}

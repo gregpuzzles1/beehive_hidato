@@ -1,0 +1,113 @@
+.hex-cell {
+  cursor: default;
+  transition: opacity var(--transition-fast);
+}
+
+.hex-cell--editable {
+  cursor: pointer;
+}
+
+.hex-cell--editable:hover polygon {
+  stroke-width: 2.5;
+  stroke: var(--link-color);
+}
+
+.hex-cell--editable:focus-visible {
+  outline: none;
+}
+
+.hex-cell--editable:focus-visible polygon {
+  stroke: var(--link-color);
+  stroke-width: 3;
+}
+
+/* Style roles */
+.hex-cell--anchor-honey polygon {
+  fill: var(--cell-anchor-bg);
+  stroke: #c9a02c;
+  stroke-width: 1.5;
+}
+
+.hex-cell--anchor-honey .hex-cell__text {
+  fill: var(--cell-anchor-text);
+  font-weight: 700;
+}
+
+.hex-cell--start-end-accent polygon {
+  fill: var(--cell-start-end-bg);
+  stroke: #5ab8c0;
+  stroke-width: 2;
+}
+
+.hex-cell--start-end-accent .hex-cell__text {
+  fill: var(--cell-start-end-text);
+  font-weight: 700;
+}
+
+.hex-cell--playable-default polygon {
+  fill: var(--cell-playable-bg);
+  stroke: var(--cell-empty-border);
+  stroke-width: 1;
+}
+
+.hex-cell--playable-default .hex-cell__text {
+  fill: var(--cell-playable-text);
+  font-weight: 500;
+}
+
+.hex-cell--empty polygon {
+  fill: var(--cell-empty-bg);
+  stroke: var(--cell-empty-border);
+  stroke-width: 1;
+}
+
+.hex-cell--filled polygon {
+  fill: var(--cell-playable-bg);
+  stroke: var(--color-mint);
+  stroke-width: 1.5;
+}
+
+.hex-cell--blocked polygon {
+  fill: var(--cell-blocked-bg);
+  stroke: transparent;
+  stroke-width: 0;
+  opacity: 0.5;
+}
+
+/* Error state */
+.hex-cell--error polygon {
+  fill: var(--cell-error-bg) !important;
+  stroke: #cc0000 !important;
+  stroke-width: 2 !important;
+}
+
+.hex-cell--error .hex-cell__text {
+  fill: var(--cell-error-text) !important;
+}
+
+/* Flashing animation for adjacency errors */
+.hex-cell--flashing polygon {
+  animation: flash-red 0.3s ease-in-out 3;
+}
+
+@keyframes flash-red {
+  0%, 100% {
+    fill: var(--cell-playable-bg);
+  }
+  50% {
+    fill: var(--cell-error-bg);
+  }
+}
+
+.hex-cell--flashing .hex-cell__text {
+  animation: flash-text 0.3s ease-in-out 3;
+}
+
+@keyframes flash-text {
+  0%, 100% {
+    fill: var(--cell-playable-text);
+  }
+  50% {
+    fill: var(--cell-error-text);
+  }
+}
