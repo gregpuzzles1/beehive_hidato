@@ -8,7 +8,12 @@ import type {
   CellStyleRole,
 } from '../../../types/puzzle'
 import { DIFFICULTY_PROFILES } from './difficultyProfiles'
-import { generatePerfectHexGrid, hexKey, getNeighbors } from './hexGeometry'
+import {
+  generatePerfectHexGrid,
+  hexDistance,
+  hexKey,
+  getNeighbors,
+} from './hexGeometry'
 import { generatePerfectVariant } from './variants/perfect'
 import { generateBlockedVariant } from './variants/blocked'
 import { generateDamagedVariant } from './variants/damaged'
@@ -34,7 +39,6 @@ const ALL_VARIANTS: HiveVariant[] = [
   'blocked',
   'damaged',
   'ring',
-  'spiral',
 ]
 
 const MAX_RETRIES = 15
@@ -52,6 +56,10 @@ const MAX_RETRIES = 15
  */
 export function generatePuzzle(difficultyId: DifficultyId): Puzzle {
   const profile = DIFFICULTY_PROFILES[difficultyId]
+  const maxAnchorCountBySideLength: Record<number, number> = {
+    4: 11,
+  }
+  const maxAnchorCount = maxAnchorCountBySideLength[profile.perfectHiveSideLength]
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     // Step 1: Random variant
@@ -77,7 +85,8 @@ export function generatePuzzle(difficultyId: DifficultyId): Puzzle {
       totalPlayable,
       profile.minAnchorRatio,
       profile.maxAnchorRatio,
-      profile.complexityRank
+      profile.complexityRank,
+      maxAnchorCount
     )
 
     if (!anchors) continue
@@ -180,41 +189,250 @@ function generateGridShape(
     return all.filter((coord) => !playableKeys.has(hexKey(coord)))
   }
 
+  let playableCoords: HexCoord[]
+  let blockedCoords: HexCoord[]
+
   switch (variant) {
     case 'perfect':
-      return {
-        playableCoords: generatePerfectVariant(sideLength),
-        blockedCoords: [],
-      }
+      playableCoords = generatePerfectVariant(sideLength)
+      blockedCoords = []
+      break
     case 'blocked': {
       const result = generateBlockedVariant(sideLength)
-      return { playableCoords: result.playable, blockedCoords: result.blocked }
+      playableCoords = result.playable
+      blockedCoords = result.blocked
+      break
     }
     case 'damaged':
       {
-        const playableCoords = generateDamagedVariant(sideLength)
-        return {
-          playableCoords,
-          blockedCoords: deriveBlockedCoords(playableCoords),
-        }
+        playableCoords = generateDamagedVariant(sideLength)
+        blockedCoords = deriveBlockedCoords(playableCoords)
       }
+      break
     case 'ring':
       {
-        const playableCoords = generateRingVariant(sideLength)
-        return {
-          playableCoords,
-          blockedCoords: deriveBlockedCoords(playableCoords),
-        }
+        playableCoords = generateRingVariant(sideLength)
+        blockedCoords = deriveBlockedCoords(playableCoords)
       }
+      break
     case 'spiral':
       {
-        const playableCoords = generateSpiralVariant(sideLength)
-        return {
-          playableCoords,
-          blockedCoords: deriveBlockedCoords(playableCoords),
-        }
+        playableCoords = generateSpiralVariant(sideLength)
+        blockedCoords = deriveBlockedCoords(playableCoords)
       }
+      break
   }
+
+  const blockedCapBySideLength: Record<number, number> = {
+    4: 3,
+    5: 7,
+  }
+  const blockedCap = blockedCapBySideLength[sideLength]
+
+  if (
+    blockedCap !== undefined &&
+    blockedCoords.length > blockedCap
+  ) {
+    const blockedShuffled = [...blockedCoords]
+    for (let i = blockedShuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[blockedShuffled[i], blockedShuffled[j]] = [
+        blockedShuffled[j],
+        blockedShuffled[i],
+      ]
+    }
+
+    const keptBlocked = blockedShuffled.slice(0, blockedCap)
+    const restoredToPlayable = blockedShuffled.slice(blockedCap)
+
+    blockedCoords = keptBlocked
+    playableCoords = [...playableCoords, ...restoredToPlayable]
+  }
+
+  const adjusted = ensureBlockedNotAllPerimeter(
+    playableCoords,
+    blockedCoords,
+    sideLength
+  )
+  playableCoords = adjusted.playableCoords
+  blockedCoords = adjusted.blockedCoords
+
+  const perimeterAdjusted = enforcePerimeterBlockedRunLimit(
+    playableCoords,
+    blockedCoords,
+    sideLength,
+    3
+  )
+  playableCoords = perimeterAdjusted.playableCoords
+  blockedCoords = perimeterAdjusted.blockedCoords
+
+  return { playableCoords, blockedCoords }
+}
+
+function ensureBlockedNotAllPerimeter(
+  playableCoords: HexCoord[],
+  blockedCoords: HexCoord[],
+  sideLength: number
+): { playableCoords: HexCoord[]; blockedCoords: HexCoord[] } {
+  if (blockedCoords.length === 0) {
+    return { playableCoords, blockedCoords }
+  }
+
+  const perimeterRadius = sideLength - 1
+  const isPerimeter = (coord: HexCoord): boolean =>
+    hexDistance(coord, { q: 0, r: 0 }) === perimeterRadius
+
+  const allBlockedOnPerimeter = blockedCoords.every(isPerimeter)
+  if (!allBlockedOnPerimeter) {
+    return { playableCoords, blockedCoords }
+  }
+
+  const interiorPlayable = playableCoords.filter((coord) => !isPerimeter(coord))
+  if (interiorPlayable.length === 0) {
+    return { playableCoords, blockedCoords }
+  }
+
+  const blockedToRestore = blockedCoords[0]
+  const interiorToBlock =
+    interiorPlayable[Math.floor(Math.random() * interiorPlayable.length)]
+
+  const interiorKey = hexKey(interiorToBlock)
+  const nextPlayable = [
+    ...playableCoords.filter((coord) => hexKey(coord) !== interiorKey),
+    blockedToRestore,
+  ]
+  const nextBlocked = [
+    ...blockedCoords.slice(1),
+    interiorToBlock,
+  ]
+
+  return {
+    playableCoords: nextPlayable,
+    blockedCoords: nextBlocked,
+  }
+}
+
+function enforcePerimeterBlockedRunLimit(
+  playableCoords: HexCoord[],
+  blockedCoords: HexCoord[],
+  sideLength: number,
+  maxRun: number
+): { playableCoords: HexCoord[]; blockedCoords: HexCoord[] } {
+  if (blockedCoords.length === 0 || sideLength < 2) {
+    return { playableCoords, blockedCoords }
+  }
+
+  const perimeter = getPerimeterRing(sideLength)
+  if (perimeter.length === 0) {
+    return { playableCoords, blockedCoords }
+  }
+
+  const perimeterKeys = perimeter.map(hexKey)
+  const blockedSet = new Set(blockedCoords.map(hexKey))
+  const playableSet = new Set(playableCoords.map(hexKey))
+  const coordByKey = new Map<string, HexCoord>()
+
+  for (const coord of perimeter) {
+    coordByKey.set(hexKey(coord), coord)
+  }
+  for (const coord of playableCoords) {
+    coordByKey.set(hexKey(coord), coord)
+  }
+  for (const coord of blockedCoords) {
+    coordByKey.set(hexKey(coord), coord)
+  }
+
+  const perimeterRadius = sideLength - 1
+  const isPerimeter = (coord: HexCoord): boolean =>
+    hexDistance(coord, { q: 0, r: 0 }) === perimeterRadius
+
+  let safety = perimeterKeys.length * 2
+  while (safety-- > 0) {
+    const longestRun = getLongestBlockedPerimeterRun(perimeterKeys, blockedSet)
+    if (longestRun.length <= maxRun) break
+
+    const interiorPlayableKeys = Array.from(playableSet).filter((key) => {
+      const coord = coordByKey.get(key)
+      return coord !== undefined && !isPerimeter(coord)
+    })
+    if (interiorPlayableKeys.length === 0) break
+
+    const runCenterIdx = Math.floor(longestRun.length / 2)
+    const perimeterBlockedKey = longestRun[runCenterIdx]
+    const interiorPlayableKey =
+      interiorPlayableKeys[
+        Math.floor(Math.random() * interiorPlayableKeys.length)
+      ]
+
+    blockedSet.delete(perimeterBlockedKey)
+    playableSet.add(perimeterBlockedKey)
+    playableSet.delete(interiorPlayableKey)
+    blockedSet.add(interiorPlayableKey)
+  }
+
+  const nextPlayable = Array.from(playableSet)
+    .map((key) => coordByKey.get(key))
+    .filter((coord): coord is HexCoord => coord !== undefined)
+  const nextBlocked = Array.from(blockedSet)
+    .map((key) => coordByKey.get(key))
+    .filter((coord): coord is HexCoord => coord !== undefined)
+
+  return { playableCoords: nextPlayable, blockedCoords: nextBlocked }
+}
+
+function getLongestBlockedPerimeterRun(
+  perimeterKeys: string[],
+  blockedSet: Set<string>
+): string[] {
+  if (perimeterKeys.length === 0) return []
+
+  const states = perimeterKeys.map((key) => blockedSet.has(key))
+  if (!states.includes(true)) return []
+  if (states.every(Boolean)) return [...perimeterKeys]
+
+  const firstOpen = states.findIndex((value) => !value)
+  let longest: string[] = []
+  let current: string[] = []
+
+  for (let step = 1; step <= states.length; step++) {
+    const idx = (firstOpen + step) % states.length
+    if (states[idx]) {
+      current.push(perimeterKeys[idx])
+      if (current.length > longest.length) {
+        longest = [...current]
+      }
+    } else {
+      current = []
+    }
+  }
+
+  return longest
+}
+
+function getPerimeterRing(sideLength: number): HexCoord[] {
+  const radius = sideLength - 1
+  if (radius <= 0) return []
+
+  const ring: HexCoord[] = []
+  let current: HexCoord = { q: 0, r: -radius }
+
+  const segmentDirections: HexCoord[] = [
+    { q: 1, r: 0 },
+    { q: 0, r: 1 },
+    { q: -1, r: 1 },
+    { q: -1, r: 0 },
+    { q: 0, r: -1 },
+    { q: 1, r: -1 },
+  ]
+
+  for (const dir of segmentDirections) {
+    for (let step = 0; step < radius; step++) {
+      ring.push(current)
+      current = { q: current.q + dir.q, r: current.r + dir.r }
+    }
+  }
+
+  return ring
 }
 
 /**
@@ -306,43 +524,73 @@ function findHamiltonianPath(coords: HexCoord[]): HexCoord[] | null {
  * - Higher complexity rank = fewer anchors (closer to 32%)
  */
 function selectAnchors(
-  _path: HexCoord[],
+  path: HexCoord[],
   total: number,
   minRatio: number,
   maxRatio: number,
-  complexityRank: number
+  complexityRank: number,
+  maxAnchorCount?: number
 ): Set<number> | null {
   // Scale anchor ratio inversely with complexity
   // Rank 1 → closer to maxRatio, Rank 5 → closer to minRatio
   const t = (complexityRank - 1) / 4 // 0 to 1
   const targetRatio = maxRatio - t * (maxRatio - minRatio)
-  const targetCount = Math.max(2, Math.round(total * targetRatio))
+  const baseTargetCount = Math.max(2, Math.round(total * targetRatio))
+  const targetCount =
+    maxAnchorCount !== undefined
+      ? Math.min(baseTargetCount, maxAnchorCount)
+      : baseTargetCount
 
-  const anchors = new Set<number>()
-  anchors.add(1) // start
-  anchors.add(total) // end
-
-  // Create pool of candidate anchor values (excluding start/end)
-  const candidates: number[] = []
-  for (let i = 2; i < total; i++) {
-    candidates.push(i)
-  }
-
-  // Shuffle candidates
-  for (let i = candidates.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[candidates[i], candidates[j]] = [candidates[j], candidates[i]]
-  }
-
-  // Add anchors until we reach target count
-  for (const val of candidates) {
-    if (anchors.size >= targetCount) break
-    anchors.add(val)
-  }
+  const anchors = pickSpreadAnchors(path, targetCount)
 
   // Verify ratio
   const ratio = anchors.size / total
-  if (ratio < minRatio || ratio > maxRatio) return null
+  const effectiveMinRatio =
+    maxAnchorCount !== undefined
+      ? Math.min(minRatio, maxAnchorCount / total)
+      : minRatio
+  if (ratio < effectiveMinRatio || ratio > maxRatio) return null
+
+  return anchors
+}
+
+function pickSpreadAnchors(path: HexCoord[], targetCount: number): Set<number> {
+  const total = path.length
+  const desiredCount = Math.min(total, Math.max(2, targetCount))
+  const anchors = new Set<number>([1, total])
+
+  while (anchors.size < desiredCount) {
+    let bestValue: number | null = null
+    let bestScore = -Infinity
+
+    for (let value = 2; value < total; value++) {
+      if (anchors.has(value)) continue
+
+      const candidateCoord = path[value - 1]
+      let minValueGap = Infinity
+      let minSpatialGap = Infinity
+
+      for (const anchorValue of anchors) {
+        const anchorCoord = path[anchorValue - 1]
+        const valueGap = Math.abs(anchorValue - value)
+        const spatialGap = hexDistance(candidateCoord, anchorCoord)
+
+        if (valueGap < minValueGap) minValueGap = valueGap
+        if (spatialGap < minSpatialGap) minSpatialGap = spatialGap
+      }
+
+      // Favor candidates far from existing anchors in both chain order
+      // and physical board location, with a tiny random tie-breaker.
+      const score = minValueGap * 1.25 + minSpatialGap + Math.random() * 0.1
+      if (score > bestScore) {
+        bestScore = score
+        bestValue = value
+      }
+    }
+
+    if (bestValue === null) break
+    anchors.add(bestValue)
+  }
 
   return anchors
 }
@@ -375,20 +623,7 @@ function buildPuzzleFromPath(
 ): Puzzle {
   const total = path.length
   const anchorCount = Math.max(2, Math.round(total * anchorRatio))
-
-  const anchors = new Set<number>()
-  anchors.add(1)
-  anchors.add(total)
-
-  const candidates = Array.from({ length: total - 2 }, (_, i) => i + 2)
-  for (let i = candidates.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[candidates[i], candidates[j]] = [candidates[j], candidates[i]]
-  }
-  for (const val of candidates) {
-    if (anchors.size >= anchorCount) break
-    anchors.add(val)
-  }
+  const anchors = pickSpreadAnchors(path, anchorCount)
 
   const solutionChain = path.map((coord, idx) => ({
     cellId: hexKey(coord),

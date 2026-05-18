@@ -12,6 +12,24 @@ import { generatePerfectHexGrid, hexKey } from '../hexGeometry'
 
 type BlockedPattern = 'eyes' | 'smiley' | 'smile' | 'center'
 
+function rowHexToCoord(
+  sideLength: number,
+  rowIndex1Based: number,
+  hexIndex1Based: number
+): HexCoord | null {
+  const n = sideLength - 1
+  const r = rowIndex1Based - (n + 1)
+  if (r < -n || r > n) return null
+
+  const qMin = Math.max(-n, -r - n)
+  const qMax = Math.min(n, -r + n)
+  const rowLength = qMax - qMin + 1
+
+  if (hexIndex1Based < 1 || hexIndex1Based > rowLength) return null
+
+  return { q: qMin + (hexIndex1Based - 1), r }
+}
+
 const PATTERNS: Record<BlockedPattern, (sideLength: number) => HexCoord[]> = {
   eyes: (sideLength) => {
     const n = sideLength - 1
@@ -23,6 +41,43 @@ const PATTERNS: Record<BlockedPattern, (sideLength: number) => HexCoord[]> = {
   },
 
   smiley: (sideLength) => {
+    if (sideLength === 5) {
+      // Custom centered smiley for 5-per-side grid using user-provided
+      // row/hex positions.
+      const positions: Array<[number, number]> = [
+        [3, 3],
+        [3, 5],
+        [6, 3],
+        [6, 6],
+        [7, 3],
+        [7, 4],
+        [7, 5],
+      ]
+
+      return positions
+        .map(([row, hex]) => rowHexToCoord(sideLength, row, hex))
+        .filter((coord): coord is HexCoord => coord !== null)
+    }
+
+    if (sideLength === 6) {
+      // Custom centered smiley for 6-per-side grid.
+      const positions: Array<[number, number]> = [
+        [4, 4],
+        [4, 7],
+        [7, 3],
+        [7, 8],
+        [8, 3],
+        [8, 4],
+        [8, 5],
+        [8, 6],
+        [8, 7],
+      ]
+
+      return positions
+        .map(([row, hex]) => rowHexToCoord(sideLength, row, hex))
+        .filter((coord): coord is HexCoord => coord !== null)
+    }
+
     const n = sideLength - 1
     const eyeOffset = Math.max(1, Math.floor(n / 2))
     const mouthRow = Math.max(1, Math.floor(n * 0.6))
@@ -61,7 +116,10 @@ export function generateBlockedVariant(sideLength: number): {
   pattern: string
 } {
   const allCells = generatePerfectHexGrid(sideLength)
-  const pattern = PATTERN_NAMES[Math.floor(Math.random() * PATTERN_NAMES.length)]
+  const pattern =
+    sideLength === 5 || sideLength === 6
+      ? 'smiley'
+      : PATTERN_NAMES[Math.floor(Math.random() * PATTERN_NAMES.length)]
   const blockedCoords = PATTERNS[pattern](sideLength)
   const blockedKeys = new Set(blockedCoords.map(hexKey))
 
