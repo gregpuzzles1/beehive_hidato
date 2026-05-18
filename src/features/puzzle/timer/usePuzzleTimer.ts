@@ -15,7 +15,8 @@ interface PuzzleTimerState {
 export function usePuzzleTimer(
   isActive: boolean,
   isPaused: boolean,
-  isVisible: boolean
+  isVisible: boolean,
+  resetKey?: string
 ): PuzzleTimerState {
   const [elapsedMs, setElapsedMs] = useState(0)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -43,6 +44,11 @@ export function usePuzzleTimer(
       }
     }
   }, [isActive, isPaused])
+
+  useEffect(() => {
+    setElapsedMs(0)
+    lastTickRef.current = Date.now()
+  }, [resetKey])
 
   return {
     elapsedMs,

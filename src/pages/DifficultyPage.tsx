@@ -77,7 +77,8 @@ export function DifficultyPage({ slug }: DifficultyPageProps) {
   const timerState = usePuzzleTimer(
     isActive || false,
     isPaused || false,
-    gameState?.session.timerVisible ?? true
+    gameState?.session.timerVisible ?? true,
+    gameState?.session.sessionId
   )
 
   // Update timer in session

@@ -41,6 +41,20 @@ const ALL_VARIANTS: HiveVariant[] = [
   'ring',
 ]
 
+type QueenGridPlan = {
+  variant: HiveVariant
+  sideLength: number
+}
+
+function getVariantPool(difficultyId: DifficultyId): HiveVariant[] {
+  // Match the reference Queen's Challenge look: either a full hive
+  // or a sparse blocked-cell hive.
+  if (difficultyId === 'queens-challenge') {
+    return ['perfect', 'blocked']
+  }
+  return ALL_VARIANTS
+}
+
 const MAX_RETRIES = 15
 
 /**
@@ -56,19 +70,43 @@ const MAX_RETRIES = 15
  */
 export function generatePuzzle(difficultyId: DifficultyId): Puzzle {
   const profile = DIFFICULTY_PROFILES[difficultyId]
+  const variantPool = getVariantPool(difficultyId)
+  const minAnchorCountByDifficulty: Partial<Record<DifficultyId, number>> = {
+    strategic: 12,
+  }
+  const maxAnchorCountByDifficulty: Partial<Record<DifficultyId, number>> = {
+    strategic: 16,
+  }
   const maxAnchorCountBySideLength: Record<number, number> = {
     4: 11,
   }
-  const maxAnchorCount = maxAnchorCountBySideLength[profile.perfectHiveSideLength]
-
+  const minAnchorCount = minAnchorCountByDifficulty[difficultyId]
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    // Step 1: Random variant
-    const variant = ALL_VARIANTS[Math.floor(Math.random() * ALL_VARIANTS.length)]
+    let variant: HiveVariant
+    let sideLength = profile.perfectHiveSideLength
+
+    if (difficultyId === 'queens-challenge') {
+      const queenPlans: QueenGridPlan[] = [
+        { variant: 'perfect', sideLength: 6 },
+        { variant: 'blocked', sideLength: 5 },
+      ]
+      const selected = queenPlans[Math.floor(Math.random() * queenPlans.length)]
+      variant = selected.variant
+      sideLength = selected.sideLength
+    } else {
+      // Step 1: Random variant
+      variant = variantPool[Math.floor(Math.random() * variantPool.length)]
+    }
+
+    const maxAnchorCount =
+      maxAnchorCountByDifficulty[difficultyId] ??
+      maxAnchorCountBySideLength[sideLength]
 
     // Step 2: Generate grid shape
     const { playableCoords, blockedCoords } = generateGridShape(
+      difficultyId,
       variant,
-      profile.perfectHiveSideLength
+      sideLength
     )
 
     if (playableCoords.length < 3) continue
@@ -86,6 +124,7 @@ export function generatePuzzle(difficultyId: DifficultyId): Puzzle {
       profile.minAnchorRatio,
       profile.maxAnchorRatio,
       profile.complexityRank,
+      minAnchorCount,
       maxAnchorCount
     )
 
@@ -180,6 +219,7 @@ export function generatePuzzle(difficultyId: DifficultyId): Puzzle {
 }
 
 function generateGridShape(
+  difficultyId: DifficultyId,
   variant: HiveVariant,
   sideLength: number
 ): { playableCoords: HexCoord[]; blockedCoords: HexCoord[] } {
@@ -198,7 +238,10 @@ function generateGridShape(
       blockedCoords = []
       break
     case 'blocked': {
-      const result = generateBlockedVariant(sideLength)
+      const result =
+        difficultyId === 'queens-challenge'
+          ? generateQueensChallengeBlockedVariant(sideLength)
+          : generateBlockedVariant(sideLength)
       playableCoords = result.playable
       blockedCoords = result.blocked
       break
@@ -267,6 +310,60 @@ function generateGridShape(
   blockedCoords = perimeterAdjusted.blockedCoords
 
   return { playableCoords, blockedCoords }
+}
+
+function generateQueensChallengeBlockedVariant(sideLength: number): {
+  playable: HexCoord[]
+  blocked: HexCoord[]
+  pattern: string
+} {
+  if (sideLength !== 5 && sideLength !== 6) {
+    return generateBlockedVariant(sideLength)
+  }
+
+  const allCells = generatePerfectHexGrid(sideLength)
+  const templates: HexCoord[][] =
+    sideLength === 5
+      ? [
+          [
+            { q: -2, r: 1 },
+            { q: -1, r: -1 },
+            { q: 0, r: 0 },
+            { q: 1, r: 1 },
+            { q: 2, r: -1 },
+          ],
+          [
+            { q: -2, r: 0 },
+            { q: -1, r: 2 },
+            { q: 0, r: -1 },
+            { q: 1, r: -2 },
+            { q: 2, r: 0 },
+          ],
+        ]
+      : [
+          [
+            { q: -2, r: 0 },
+            { q: -1, r: -1 },
+            { q: 0, r: 2 },
+            { q: 2, r: 0 },
+            { q: 1, r: 1 },
+          ],
+          [
+            { q: -2, r: 1 },
+            { q: 0, r: -2 },
+            { q: 2, r: -1 },
+            { q: -1, r: 2 },
+            { q: 1, r: 0 },
+          ],
+        ]
+
+  const template = templates[Math.floor(Math.random() * templates.length)]
+  const available = new Set(allCells.map((c) => hexKey(c)))
+  const blocked = template.filter((coord) => available.has(hexKey(coord)))
+  const blockedKeys = new Set(blocked.map((coord) => hexKey(coord)))
+  const playable = allCells.filter((coord) => !blockedKeys.has(hexKey(coord)))
+
+  return { playable, blocked, pattern: 'queens-sparse-blocked' }
 }
 
 function ensureBlockedNotAllPerimeter(
@@ -529,6 +626,7 @@ function selectAnchors(
   minRatio: number,
   maxRatio: number,
   complexityRank: number,
+  minAnchorCount?: number,
   maxAnchorCount?: number
 ): Set<number> | null {
   // Scale anchor ratio inversely with complexity
@@ -536,20 +634,51 @@ function selectAnchors(
   const t = (complexityRank - 1) / 4 // 0 to 1
   const targetRatio = maxRatio - t * (maxRatio - minRatio)
   const baseTargetCount = Math.max(2, Math.round(total * targetRatio))
-  const targetCount =
+  const boundedMin =
+    minAnchorCount !== undefined
+      ? Math.max(2, Math.min(total, minAnchorCount))
+      : undefined
+  const boundedMax =
     maxAnchorCount !== undefined
-      ? Math.min(baseTargetCount, maxAnchorCount)
-      : baseTargetCount
+      ? Math.max(2, Math.min(total, maxAnchorCount))
+      : undefined
+  const minCountFromRatio = Math.ceil(total * minRatio)
+  const maxCountFromRatio = Math.floor(total * maxRatio)
+  if (maxCountFromRatio < minCountFromRatio) return null
+
+  let targetCount: number
+  if (boundedMin !== undefined && boundedMax !== undefined) {
+    const low = Math.min(boundedMin, boundedMax)
+    const high = Math.max(boundedMin, boundedMax)
+    targetCount = low + Math.floor(Math.random() * (high - low + 1))
+  } else {
+    targetCount = baseTargetCount
+    if (boundedMin !== undefined) {
+      targetCount = Math.max(targetCount, boundedMin)
+    }
+    if (boundedMax !== undefined) {
+      targetCount = Math.min(targetCount, boundedMax)
+    }
+    targetCount = Math.max(targetCount, minCountFromRatio)
+    targetCount = Math.min(targetCount, maxCountFromRatio)
+  }
 
   const anchors = pickSpreadAnchors(path, targetCount)
+
+  if (boundedMin !== undefined && boundedMax !== undefined) {
+    const minCount = Math.min(boundedMin, boundedMax)
+    const maxCount = Math.max(boundedMin, boundedMax)
+    if (anchors.size < minCount || anchors.size > maxCount) return null
+    return anchors
+  }
 
   // Verify ratio
   const ratio = anchors.size / total
   const effectiveMinRatio =
-    maxAnchorCount !== undefined
-      ? Math.min(minRatio, maxAnchorCount / total)
-      : minRatio
-  if (ratio < effectiveMinRatio || ratio > maxRatio) return null
+    boundedMin !== undefined ? Math.max(minRatio, boundedMin / total) : minRatio
+  const effectiveMaxRatio =
+    boundedMax !== undefined ? Math.min(maxRatio, boundedMax / total) : maxRatio
+  if (ratio < effectiveMinRatio || ratio > effectiveMaxRatio) return null
 
   return anchors
 }
@@ -601,8 +730,8 @@ function pickSpreadAnchors(path: HexCoord[], targetCount: number): Set<number> {
  */
 function generateFallbackPuzzle(difficultyId: DifficultyId): Puzzle {
   const profile = DIFFICULTY_PROFILES[difficultyId]
-  // Use smaller grid for fallback
-  const sideLength = Math.min(profile.perfectHiveSideLength, 3)
+  // Keep fallback aligned with configured difficulty side length.
+  const sideLength = profile.perfectHiveSideLength
   const coords = generatePerfectVariant(sideLength)
   const path = findHamiltonianPath(coords)
 

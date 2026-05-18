@@ -8,8 +8,8 @@ export const DIFFICULTY_PROFILES: Record<DifficultyId, DifficultyProfile> = {
     slug: 'gentle-flow',
     perfectHiveSideLength: 3,
     complexityRank: 1,
-    minAnchorRatio: 0.32,
-    maxAnchorRatio: 0.48,
+    minAnchorRatio: 0.3,
+    maxAnchorRatio: 0.44,
   },
   thoughtful: {
     id: 'thoughtful',
@@ -18,8 +18,8 @@ export const DIFFICULTY_PROFILES: Record<DifficultyId, DifficultyProfile> = {
     slug: 'thoughtful',
     perfectHiveSideLength: 4,
     complexityRank: 2,
-    minAnchorRatio: 0.32,
-    maxAnchorRatio: 0.48,
+    minAnchorRatio: 0.28,
+    maxAnchorRatio: 0.42,
   },
   strategic: {
     id: 'strategic',
@@ -28,8 +28,8 @@ export const DIFFICULTY_PROFILES: Record<DifficultyId, DifficultyProfile> = {
     slug: 'strategic',
     perfectHiveSideLength: 5,
     complexityRank: 3,
-    minAnchorRatio: 0.32,
-    maxAnchorRatio: 0.48,
+    minAnchorRatio: 0.26,
+    maxAnchorRatio: 0.4,
   },
   architect: {
     id: 'architect',
@@ -38,8 +38,8 @@ export const DIFFICULTY_PROFILES: Record<DifficultyId, DifficultyProfile> = {
     slug: 'architect',
     perfectHiveSideLength: 6,
     complexityRank: 4,
-    minAnchorRatio: 0.32,
-    maxAnchorRatio: 0.48,
+    minAnchorRatio: 0.22,
+    maxAnchorRatio: 0.36,
   },
   'queens-challenge': {
     id: 'queens-challenge',
@@ -48,8 +48,8 @@ export const DIFFICULTY_PROFILES: Record<DifficultyId, DifficultyProfile> = {
     slug: 'queens-challenge',
     perfectHiveSideLength: 6,
     complexityRank: 5,
-    minAnchorRatio: 0.32,
-    maxAnchorRatio: 0.48,
+    minAnchorRatio: 0.18,
+    maxAnchorRatio: 0.3,
   },
 } as const
 

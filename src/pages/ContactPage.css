@@ -81,6 +81,7 @@
 }
 
 .contact-page__submit {
+  display: inline-block;
   background-color: var(--button-bg);
   color: var(--button-text);
   padding: var(--spacing-sm) var(--spacing-lg);
@@ -88,6 +89,8 @@
   font-size: var(--font-size-base);
   border-radius: var(--radius-md);
   align-self: flex-start;
+  text-decoration: none;
+  border: none;
   cursor: pointer;
   transition: background-color var(--transition-fast);
 }

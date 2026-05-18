@@ -12,7 +12,7 @@ export function Footer() {
         <p className="site-footer__license">
           Licensed under the{' '}
           <a
-            href="https://opensource.org/licenses/MIT"
+            href="https://github.com/gregpuzzles1/beehive_hidato/blob/main/LICENSE"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -21,7 +21,7 @@ export function Footer() {
         </p>
         <div className="site-footer__links">
           <a
-            href="https://github.com/GREGP/beehive_hidato"
+            href="https://github.com/gregpuzzles1/beehive_hidato"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -29,7 +29,7 @@ export function Footer() {
           </a>
           <span className="site-footer__separator" aria-hidden="true">|</span>
           <a
-            href="https://github.com/GREGP/beehive_hidato/issues"
+            href="https://github.com/gregpuzzles1/beehive_hidato/issues"
             target="_blank"
             rel="noopener noreferrer"
           >
